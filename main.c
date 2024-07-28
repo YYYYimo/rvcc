@@ -2,7 +2,7 @@
     
 int main(int Argc, char **Argv)
 {
-    if (Arg != 2)
+    if (Argc != 2)
     {
         error("%s: Invalid number of args", Argv[0]);
     }
@@ -15,6 +15,5 @@ int main(int Argc, char **Argv)
 
     //Éú³É´úÂë
     codegen(Nd);
-
     return 0;
 }

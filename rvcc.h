@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 typedef enum 
 {
@@ -25,6 +26,7 @@ struct Token
 
 //报错函数
 void error(char *Fmt, ...);
+void verrorAt(char *Loc, char *Fmt, va_list);
 void errorAt(char *Loc, char *Fmt, ...);
 void errorTok(Token *Tok, char *Fmt, ...);
 
@@ -56,7 +58,8 @@ struct Node
     NodeKind Kind;
     Node *LHS;
     Node *RHS;
-    int Val;
+    Token *Tok;
+    int64_t Val;
 };
 
 //语法分析与代码生成
