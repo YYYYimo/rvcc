@@ -148,15 +148,62 @@ static Node *add(Token **Rest, Token *Tok)
 
 static Node *relational(Token **Rest, Token *Tok)
 {
+    Node *Nd = add(&Tok, Tok);
+
+    while (true)
+    {
+        if (equal(Tok, "<"))
+        {
+            Nd = newBinary(ND_LT, Nd, add(&Tok, Tok->Next));
+            continue;
+        }
+
+        if (equal(Tok, "<="))
+        {
+            Nd = newBinary(ND_LE, Nd, add(&Tok, Tok->Next));
+            continue;
+        }
+
+        //X > Y µÈ¼ÛÓÚ Y < X
+        if (equal(Tok, ">"))
+        {
+            Nd = newBinary(ND_LT, add(&Tok, Tok->Next), Nd);
+            continue;
+        }
+
+        if (equal(Tok, ">="))
+        {
+            Nd = newBinary(ND_LE, add(&Tok, Tok->Next), Nd);
+            continue;
+        }
+
+        *Rest = Tok;
+        return Nd;
+    }
 
 }
 
 static Node *equality(Token **Rest, Token *Tok)
 {
+    Node *Nd = relational(&Tok, Tok);
 
+    while (true)
+    {
+        if (equal(Tok, "=="))
+        {
+            Nd = newBinary(ND_EQ, Nd, relational(&Tok, Tok));
+            continue;
+        }
+
+        if (equal(Tok, "!="))
+        {
+            Nd = newBinary(ND_NE, Nd, relational(&Tok, Tok));
+            continue;
+        }
+    }
 }
 
 static Node *expr(Token **Rest, Token *Tok)
 {
-    
+    return equality(Rest, Tok);
 }

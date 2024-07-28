@@ -10,3 +10,6 @@ rvcc: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(OBJS): rvcc.h
+
+clean:
+	rm -f rvcc $(OBJS)

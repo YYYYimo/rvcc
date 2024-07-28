@@ -59,7 +59,7 @@ struct Node
     Node *LHS;
     Node *RHS;
     Token *Tok;
-    int64_t Val;
+    int Val;
 };
 
 //语法分析与代码生成

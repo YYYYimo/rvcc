@@ -4,7 +4,7 @@ static int Depth;
 
 static void push(void)
 {
-    prnitf("    addi sp, sp, -8\n");
+    printf("    addi sp, sp, -8\n");
     printf("    sd a0, 0(sp)\n");
     Depth++;
 }
@@ -58,6 +58,29 @@ static void genExpr(Node *Nd)
     case ND_DIV:
         printf("    div a0, a0, a1\n");
         return;
+
+    case ND_EQ:
+    case ND_NE:
+        //if a0 == a1 then a0->0
+        printf("    xor a0, a0, a1\n");
+
+        //if a0 == 0 then a0->1
+        if (Nd->Kind == ND_EQ)
+            printf("    seqz a0, a0\n");
+        else
+        //if a0 != 0 then a0->1
+            printf("    snez a0, a0\n");
+        return;
+
+    case ND_LT:
+        printf("    slt a0, a0, a1\n");
+        return;
+    case ND_LE:
+        //a0 <= a1 µÈ¼ÛÓÚ
+        //!(a0 > a1)->!(a1 < a0)
+        printf("    slt a0, a1, a0\n");
+        printf("    xori a0, a0, 1\n");
+        return;
     }
 }
 
@@ -69,5 +92,5 @@ void codegen(Node *Nd)
     genExpr(Nd);
     printf("    ret\n");
 
-    
+    assert(Depth == 0);
 }
