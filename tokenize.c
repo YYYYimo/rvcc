@@ -3,6 +3,9 @@
 static char *CurrentInput;
 
 //（Head）-> 1 -> + -> 2 -> - ->3
+Token *newToken(TokenKind Kind, char *Start, char *End);
+static int readPunct(char *Ptr);
+static bool startsWith(char *Str, char *SubStr);
 
 void error(char *Fmt, ...) {
   // 定义一个va_list变量
@@ -71,6 +74,20 @@ Token *newToken(TokenKind Kind, char *Start, char *End)
     return Tok;
 }
 
+static bool startsWith(char *Str, char *SubStr)
+{
+    return strncmp(Str, SubStr, strlen(SubStr)) == 0;
+}
+
+static int readPunct(char *Ptr)
+{
+    if (startsWith(Ptr, "==") || startsWith(Ptr, "!=") ||
+        startsWith(Ptr, ">=") || startsWith(Ptr, "<="))
+        return 2;
+    
+    return ispunct(*Ptr) ? 1 : 0;
+}
+
 Token *tokenize(char *P)
 {
     CurrentInput = P;
@@ -100,11 +117,12 @@ Token *tokenize(char *P)
         }
 
         //解析操作符
+        int PunctLen = readPunct(P);
         if (ispunct(*P))
         {
-            Cur->Next = newToken(TK_PUNCT, P, P + 1);
+            Cur->Next = newToken(TK_PUNCT, P, P + PunctLen);
             Cur = Cur->Next;
-            ++P;
+            P += PunctLen;
             continue;
         }
 

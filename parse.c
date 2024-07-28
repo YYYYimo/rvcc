@@ -1,10 +1,18 @@
 #include "rvcc.h"
 
-// expr = mul ("+" mul | "-" mul)*
+// expr = equality
+// equality = relational ("==" relational | "!=" relational)
+// relational = add ("<" add | "<=" add | " >" add | ">=" add)
+// add = mul ("+" mul | "-" mul)*
 // mul = primary ("*" primary | "/" primary)
+// unary = ("+" | "-") unary | primary
 // primary = "( expr )" | num
 static Node *expr(Token **Rest, Token *Tok);
+static Node *equality(Token **Rest, Token *Tok);
+static Node *relational(Token **Rest, Token *Tok);
+static Node *add(Token **Rest, Token *Tok);
 static Node *mul(Token **Rest, Token *Tok);
+static Node *unary(Token **Rest, Token *Tok);
 static Node *primary(Token **Rest, Token *Tok);
 
 // 新建语法树的节点
@@ -77,23 +85,34 @@ static Node *primary(Token **Rest, Token *Tok)
     }
 }
 
+static Node *unary(Token **Rest, Token *Tok)
+{
+    if (equal(Tok, "+"))
+        return unary(Rest, Tok->Next);
+    
+    if (equal(Tok, "-"))
+        return newUnary(ND_NEG, unary(Rest, Tok->Next));
+
+    return primary(Rest, Tok);
+}
+
 static Node *mul(Token **Rest, Token *Tok)
 {
     // primary
-    Node *Nd = primary(&Tok, Tok);
+    Node *Nd = unary(&Tok, Tok);
 
     while (true)
     {
         //("*" | "/" primary)
         if (equal(Tok, "*"))
         {
-            Nd = newBinary(ND_MUL, Nd, primary(&Tok, Tok->Next));
+            Nd = newBinary(ND_MUL, Nd, unary(&Tok, Tok->Next));
             continue;
         }
 
         if (equal(Tok, "/"))
         {
-            Nd = newBinary(ND_DIV, Nd, primary(&Tok, Tok->Next));
+            Nd = newBinary(ND_DIV, Nd, unary(&Tok, Tok->Next));
             continue;
         }
 
@@ -102,7 +121,7 @@ static Node *mul(Token **Rest, Token *Tok)
     }
 }
 
-static Node *expr(Token **Rest, Token *Tok)
+static Node *add(Token **Rest, Token *Tok)
 {
     // mul
     Node *Nd = mul(&Tok, Tok);
@@ -125,4 +144,19 @@ static Node *expr(Token **Rest, Token *Tok)
         *Rest = Tok;
         return Nd;
     }
+}
+
+static Node *relational(Token **Rest, Token *Tok)
+{
+
+}
+
+static Node *equality(Token **Rest, Token *Tok)
+{
+
+}
+
+static Node *expr(Token **Rest, Token *Tok)
+{
+    
 }

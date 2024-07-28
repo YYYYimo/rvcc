@@ -18,14 +18,22 @@ static void pop(char *Reg)
 
 static void genExpr(Node *Nd)
 {
-    if (Nd->Kind == ND_NUM)
+    if (Nd == NULL)
+        return;
+    
+    switch (Nd->Kind)
     {
+    case ND_NUM:
         printf("    li a0, %d\n", Nd->Val);
+        return;
+    case ND_NEG:
+        genExpr(Nd->LHS);
+        printf("    neg a0, a0\n");
         return;
     }
     
     //递归到最右节点
-    genExpr(Nd->LHS);
+    genExpr(Nd->RHS);
 
     //将结果压入栈
     push();
@@ -48,7 +56,7 @@ static void genExpr(Node *Nd)
         printf("    mul a0, a0, a1\n");
         return;
     case ND_DIV:
-        printf("    dix a0, a0, a1\n");
+        printf("    div a0, a0, a1\n");
         return;
     }
 }
