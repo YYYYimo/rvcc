@@ -23,6 +23,9 @@ assert()
 assert 6 "1+2+3"
 assert 1 "1"
 assert 8 "2* (4+1-1)"
+assert 0 "42!=42"
+assert 1 "3 >= 2"
+assert 1 "-2------3"
 
 
 echo "OK"

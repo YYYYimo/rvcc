@@ -6,11 +6,14 @@ SRCS=$(wildcard *.c)
 
 OBJS=$(SRCS:.c=.o)
 
+# rvcc depends on OBJS
 rvcc: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
+# OBJS depends on rvcc.h
 $(OBJS): rvcc.h
 
+# test depends on rvcc
 test: rvcc
 	./test.sh
 

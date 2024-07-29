@@ -191,13 +191,13 @@ static Node *equality(Token **Rest, Token *Tok)
     {
         if (equal(Tok, "=="))
         {
-            Nd = newBinary(ND_EQ, Nd, relational(&Tok, Tok));
+            Nd = newBinary(ND_EQ, Nd, relational(&Tok, Tok->Next));
             continue;
         }
 
         if (equal(Tok, "!="))
         {
-            Nd = newBinary(ND_NE, Nd, relational(&Tok, Tok));
+            Nd = newBinary(ND_NE, Nd, relational(&Tok, Tok->Next));
             continue;
         }
 
