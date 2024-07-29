@@ -61,7 +61,7 @@ bool equal(Token *Tok, char *Str)
 Token *skip(Token *Tok, char *Str)
 {
     if (!equal(Tok, Str))
-        error("expected '%s", Str);
+        error("expected '%s'", Str);
     return Tok->Next;
 }
 

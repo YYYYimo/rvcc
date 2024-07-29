@@ -48,7 +48,8 @@ typedef enum
     ND_EQ,
     ND_LT,
     ND_LE,
-    ND_NUM
+    ND_NUM,
+    ND_EXPR_STMT
 } NodeKind;
 
 //AST中二叉树节点
@@ -58,7 +59,7 @@ struct Node
     NodeKind Kind;
     Node *LHS;
     Node *RHS;
-    Token *Tok;
+    Node *Next; //指代下一语句
     int Val;
 };
 
