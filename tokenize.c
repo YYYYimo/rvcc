@@ -128,8 +128,9 @@ Token *tokenize(char *P)
 
         errorAt(P, "invaild token");
 
-        Cur->Next = newToken(TK_EOF, P, P + 1);
-
-        return Head.Next;
     }
+
+    Cur->Next = newToken(TK_EOF, P, P + 1);
+
+    return Head.Next;
 }

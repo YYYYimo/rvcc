@@ -11,5 +11,8 @@ rvcc: $(OBJS)
 
 $(OBJS): rvcc.h
 
+test: rvcc
+	./test.sh
+
 clean:
-	rm -f rvcc $(OBJS)
+	rm -f rvcc $(OBJS) *.s tmp*

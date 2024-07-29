@@ -47,7 +47,7 @@ static void genExpr(Node *Nd)
     switch (Nd->Kind)
     {
     case ND_ADD:
-        printf("    addi a0, a0, a1\n");
+        printf("    add a0, a0, a1\n");
         return;
     case ND_SUB:
         printf("    sub a0, a0, a1\n");

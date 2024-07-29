@@ -200,6 +200,9 @@ static Node *equality(Token **Rest, Token *Tok)
             Nd = newBinary(ND_NE, Nd, relational(&Tok, Tok));
             continue;
         }
+
+        *Rest = Tok;
+        return Nd;
     }
 }
 
