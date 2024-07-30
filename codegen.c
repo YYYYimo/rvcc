@@ -2,6 +2,12 @@
 
 static int Depth;
 
+static void push(void);
+static void pop(char *Reg);
+static void genStmt(Node *Nd);
+static void genAddr(Node *Nd);
+static void genExpr(Node *Nd);
+
 static void push(void)
 {
     printf("    addi sp, sp, -8\n");
@@ -81,6 +87,33 @@ static void genExpr(Node *Nd)
         printf("    slt a0, a1, a0\n");
         printf("    xori a0, a0, 1\n");
         return;
+    
+    case ND_VAR:
+        genAddr(Nd);
+        printf("    ld a0, 0(a0)\n");
+        return;
+    
+    case ND_ASSIGN:
+        //左部是左值，保存值到地址
+        genAddr(Nd->LHS);
+        push();
+        //右部是右值，为表达式
+        genExpr(Nd->RHS);
+        pop("a1");
+        printf("    sd a0, 0(a1)\n");
+        return;
+    default:
+        break;
+    }
+}
+
+static void genAddr(Node *Nd)
+{
+    if (Nd->Kind == ND_VAR)
+    {
+        int Offset = (Nd->Name - 'a' + 1) * 8;
+        printf("    addi a0, fp, %d\n", -Offset);
+        return;
     }
 }
 
@@ -100,11 +133,25 @@ void codegen(Node *Nd)
     printf("    .globl main\n");
     printf("main:\n");
     
+    //push ebp
+    printf("    addi sp, sp, -8\n");
+    printf("    sd fp, 0(sp)\n");
+    //mov ebp esp
+    printf("    mv fp, sp\n");
+    //sub esp 208
+    printf("    addi sp, sp, -208\n");
+
     for (Node *N = Nd; N; N = N->Next)
     {
         genStmt(N);
         assert(Depth == 0);
     }
+
+    //mov esp ebp
+    printf("    mv sp, fp\n");
+    //pop ebp
+    printf("    ld fp, 0(sp)\n");
+    printf("    addi sp, sp, 8\n");
 
     printf("    ret\n");
 

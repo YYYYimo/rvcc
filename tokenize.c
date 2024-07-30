@@ -126,6 +126,15 @@ Token *tokenize(char *P)
             continue;
         }
 
+        //½âÎö±ê¼Ç·û
+        if ('a' <= *P && *P <= 'z')
+        {
+            Cur->Next = newToken(TK_IDENT, P, P + 1);
+            Cur = Cur->Next;
+            ++P;
+            continue;
+        }
+
         errorAt(P, "invaild token");
 
     }

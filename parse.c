@@ -3,15 +3,17 @@
 // program = stmt*
 // stmt = exprStmt
 // exprStmt = expr ";"
-// expr = equality
+// expr = assign
+// assign = equality ("=" assign recursion) 
 // equality = relational ("==" relational | "!=" relational)
 // relational = add ("<" add | "<=" add | " >" add | ">=" add)
 // add = mul ("+" mul | "-" mul)*
 // mul = primary ("*" primary | "/" primary)
 // unary = ("+" | "-") unary | primary
-// primary = "( expr )" | num
+// primary = "( expr )" | num | ident
 static Node *stmt(Token **Rest, Token *Tok);
 static Node *exprStmt(Token **Rest, Token *Tok);
+static Node *assign(Token **Rest, Token *Tok);
 static Node *expr(Token **Rest, Token *Tok);
 static Node *equality(Token **Rest, Token *Tok);
 static Node *relational(Token **Rest, Token *Tok);
@@ -25,6 +27,7 @@ static Node *newNode(NodeKind Kind);
 static Node *newUnary(NodeKind Kind, Node *Expr);
 static Node *newBinary(NodeKind Kind, Node *LHS, Node *RHS);
 static Node *newNum(int64_t Val, Token *Tok);
+static Node *newVar(char name);
 
 static Node *newNode(NodeKind Kind)
 {
@@ -58,6 +61,13 @@ static Node *newNum(int64_t Val, Token *Tok)
     return Nd;
 }
 
+static Node *newVar(char name)
+{
+    Node *Nd = newNode(ND_VAR);
+    Nd->Name = name;
+    return Nd;
+}
+
 Node *parse(Token *Tok)
 {
     Node Head = {};
@@ -88,6 +98,14 @@ static Node *primary(Token **Rest, Token *Tok)
     if (Tok->Kind == TK_NUM)
     {
         Node *Nd = newNum(Tok->Val, Tok);
+        *Rest = Tok->Next;
+        return Nd;
+    }
+
+    //ident
+    if (Tok->Kind == TK_IDENT)
+    {
+        Node *Nd = newVar(*Tok->Loc);
         *Rest = Tok->Next;
         return Nd;
     }
@@ -214,9 +232,19 @@ static Node *equality(Token **Rest, Token *Tok)
     }
 }
 
+static Node *assign(Token **Rest, Token *Tok)
+{
+    Node *Nd = equality(&Tok, Tok);
+
+    if (equal(Tok, "="))
+        Nd = newBinary(ND_ASSIGN, Nd, assign(&Tok, Tok->Next));
+    *Rest = Tok;
+    return Nd;
+}
+
 static Node *expr(Token **Rest, Token *Tok)
 {
-    return equality(Rest, Tok);
+    return assign(Rest, Tok);
 }
 
 

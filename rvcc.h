@@ -9,6 +9,7 @@
 
 typedef enum 
 {
+    TK_IDENT, //标记符，变量名、函数名
     TK_PUNCT,
     TK_NUM,
     TK_EOF
@@ -49,7 +50,9 @@ typedef enum
     ND_LT,
     ND_LE,
     ND_NUM,
-    ND_EXPR_STMT
+    ND_EXPR_STMT,
+    ND_ASSIGN, //赋值节点
+    ND_VAR //变量节点
 } NodeKind;
 
 //AST中二叉树节点
@@ -60,6 +63,7 @@ struct Node
     Node *LHS;
     Node *RHS;
     Node *Next; //指代下一语句
+    char Name;
     int Val;
 };
 
