@@ -67,7 +67,7 @@ Token *skip(Token *Tok, char *Str)
 
 Token *newToken(TokenKind Kind, char *Start, char *End)
 {
-    Token *Tok = calloc(1, sizeof(Token));
+    Token *Tok = (Token *)calloc(1, sizeof(Token));
     Tok->Kind = Kind;
     Tok->Loc = Start;
     Tok->Len = End - Start;
@@ -79,6 +79,7 @@ static bool startsWith(char *Str, char *SubStr)
     return strncmp(Str, SubStr, strlen(SubStr)) == 0;
 }
 
+
 static int readPunct(char *Ptr)
 {
     if (startsWith(Ptr, "==") || startsWith(Ptr, "!=") ||
@@ -86,6 +87,16 @@ static int readPunct(char *Ptr)
         return 2;
     
     return ispunct(*Ptr) ? 1 : 0;
+}
+
+static bool isIdent1(char C)
+{
+    return ('a' <= C && C <= 'z') || ('A' <= C && C <= 'Z') || C == '_';
+}
+
+static bool isIdent2(char C)
+{
+    return isIdent1(C) || ('0' <= C && C <= '9');
 }
 
 Token *tokenize(char *P)
@@ -127,16 +138,19 @@ Token *tokenize(char *P)
         }
 
         //½âÎö±ê¼Ç·û
-        if ('a' <= *P && *P <= 'z')
+        //[a-zA-Z_][a-zA-Z0-9_]*
+        if (isIdent1(*P))
         {
-            Cur->Next = newToken(TK_IDENT, P, P + 1);
+            char *Start = P;
+            do {
+                ++P;
+            } while (isIdent2(*P));
+            Cur->Next = newToken(TK_IDENT, Start, P);
             Cur = Cur->Next;
-            ++P;
             continue;
         }
 
         errorAt(P, "invaild token");
-
     }
 
     Cur->Next = newToken(TK_EOF, P, P + 1);

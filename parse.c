@@ -1,5 +1,9 @@
 #include "rvcc.h"
 
+
+Obj *Locals;
+
+static Obj *findVar(Token *Tok);
 // program = stmt*
 // stmt = exprStmt
 // exprStmt = expr ";"
@@ -20,18 +24,38 @@ static Node *relational(Token **Rest, Token *Tok);
 static Node *add(Token **Rest, Token *Tok);
 static Node *mul(Token **Rest, Token *Tok);
 static Node *unary(Token **Rest, Token *Tok);
-static Node *primary(Token **Rest, Token *Tok);
+static Node *primary(Token **Rest, Token *Token);
 
 // 新建语法树的节点
 static Node *newNode(NodeKind Kind);
 static Node *newUnary(NodeKind Kind, Node *Expr);
 static Node *newBinary(NodeKind Kind, Node *LHS, Node *RHS);
 static Node *newNum(int64_t Val, Token *Tok);
-static Node *newVar(char name);
+static Obj* newLVar(char *Name);
+static Node *newVarNode(Obj *Var);
+
+char *Strndup(const char *s, size_t n)
+{
+    if (!s)
+    {
+        error("wrong name\n");
+        return NULL;
+    }
+
+    char *new_str = (char *)calloc(n + 1, sizeof(char));
+    if (new_str == NULL) 
+    {
+        error("memory allocation failed\n");
+        return NULL;
+    }
+    strncpy(new_str, s, n);
+    new_str[n] = '\0';
+    return new_str;
+}
 
 static Node *newNode(NodeKind Kind)
 {
-    Node *Nd = calloc(1, sizeof(Node));
+    Node *Nd = (Node *)calloc(1, sizeof(Node));
     Nd->Kind = Kind;
     return Nd;
 }
@@ -61,26 +85,59 @@ static Node *newNum(int64_t Val, Token *Tok)
     return Nd;
 }
 
-static Node *newVar(char name)
+static Obj *newLVar(char *Name)
+{
+    Obj *Var = (Obj *)calloc(1, sizeof(Obj));
+    if (!Var)
+    {
+        error("Memory allocation failed\n");
+        exit(1);
+    }
+    Var->Name = Name;
+    Var->Next = Locals;
+    Locals = Var;
+    return Var;
+}
+
+static Node *newVarNode(Obj *Var)
 {
     Node *Nd = newNode(ND_VAR);
-    Nd->Name = name;
+    Nd->Var = Var;
     return Nd;
 }
 
-Node *parse(Token *Tok)
+static Obj *findVar(Token *Tok)
+{
+    for (Obj *Var = Locals; Var; Var = Var->Next)
+    {
+        if (strlen(Var->Name) == Tok->Len && 
+            strncmp(Tok->Loc, Var->Name, Tok->Len) == 0)
+            return Var;
+    }
+    return NULL;
+}
+
+Function *parse(Token *Tok)
 {
     Node Head = {};
     Node *Cur = &Head;
 
+    //stmt*
     while (Tok->Kind != TK_EOF)
     {
         Cur->Next = stmt(&Tok, Tok);
         Cur = Cur->Next;
+        
     }
     
-    return Head.Next;
+    // Body存储AST，Locals存储变量
+    Function *Prog = (Function *)calloc(1, sizeof(Function));
+    Prog->Body = Head.Next;
+    Prog->Locals = Locals;
+    return Prog;
 }
+
+
 
 
 
@@ -105,9 +162,11 @@ static Node *primary(Token **Rest, Token *Tok)
     //ident
     if (Tok->Kind == TK_IDENT)
     {
-        Node *Nd = newVar(*Tok->Loc);
+        Obj *Var = findVar(Tok);
+        if (!Var)
+            Var = newLVar(Strndup(Tok->Loc, Tok->Len));
         *Rest = Tok->Next;
-        return Nd;
+        return newVarNode(Var);
     }
 }
 

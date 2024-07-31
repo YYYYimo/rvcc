@@ -1,3 +1,6 @@
+//使用POSIX.1 标准
+#define _POSIX_C_SOURCE 200808L
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -7,6 +10,29 @@
 #include <string.h>
 #include <stdint.h>
 
+typedef struct Node Node;
+typedef struct Token Token;
+typedef struct Obj Obj;
+typedef struct Function Function;
+
+char *Strndup(const char *s, size_t n);
+
+struct Function
+{
+    Node *Body;
+    Obj *Locals;
+    int StackSize;
+};
+
+//local varible
+struct Obj
+{
+    Obj *Next;
+    char *Name;
+    int Offset; //offset of fp
+};
+
+
 typedef enum 
 {
     TK_IDENT, //标记符，变量名、函数名
@@ -15,7 +41,7 @@ typedef enum
     TK_EOF
 } TokenKind;
 
-typedef struct Token Token;
+
 struct Token
 {
     TokenKind Kind;
@@ -56,19 +82,19 @@ typedef enum
 } NodeKind;
 
 //AST中二叉树节点
-typedef struct Node Node;
 struct Node
 {
     NodeKind Kind;
     Node *LHS;
     Node *RHS;
     Node *Next; //指代下一语句
-    char Name;
+    Obj *Var; // 存储ND_VAR
     int Val;
 };
 
 //语法分析与代码生成
-Node *parse(Token *Tok);
+Function *parse(Token *Tok);
 
 //代码生成入口函数
-void codegen(Node *Nd);
+void codegen(Function *Prog);
+

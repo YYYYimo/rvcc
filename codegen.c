@@ -1,5 +1,6 @@
 #include "rvcc.h"
 
+extern Node *Locals;
 static int Depth;
 
 static void push(void);
@@ -7,6 +8,8 @@ static void pop(char *Reg);
 static void genStmt(Node *Nd);
 static void genAddr(Node *Nd);
 static void genExpr(Node *Nd);
+static int alignTo(int N, int Align);
+static void assignLVarOffsets(Function *Prog);
 
 static void push(void)
 {
@@ -36,18 +39,27 @@ static void genExpr(Node *Nd)
         genExpr(Nd->LHS);
         printf("    neg a0, a0\n");
         return;
+    case ND_ASSIGN:
+        //左部是左值，保存值到地址
+        genAddr(Nd->LHS);
+        push();
+        //右部是右值，为表达式
+        genExpr(Nd->RHS);
+        pop("a1");
+        printf("    sd a0, 0(a1)\n");
+        return;
+    case ND_VAR:
+        genAddr(Nd);
+        printf("    ld a0, 0(a0)\n");
+        return;
+    default:
+        break;
     }
     
-    //递归到最右节点
+    //general Binary roots
     genExpr(Nd->RHS);
-
-    //将结果压入栈
     push();
-
-    //递归到左节点
     genExpr(Nd->LHS);
-    
-    //将结果弹栈到a1
     pop("a1");
 
     switch (Nd->Kind)
@@ -88,20 +100,6 @@ static void genExpr(Node *Nd)
         printf("    xori a0, a0, 1\n");
         return;
     
-    case ND_VAR:
-        genAddr(Nd);
-        printf("    ld a0, 0(a0)\n");
-        return;
-    
-    case ND_ASSIGN:
-        //左部是左值，保存值到地址
-        genAddr(Nd->LHS);
-        push();
-        //右部是右值，为表达式
-        genExpr(Nd->RHS);
-        pop("a1");
-        printf("    sd a0, 0(a1)\n");
-        return;
     default:
         break;
     }
@@ -111,8 +109,7 @@ static void genAddr(Node *Nd)
 {
     if (Nd->Kind == ND_VAR)
     {
-        int Offset = (Nd->Name - 'a' + 1) * 8;
-        printf("    addi a0, fp, %d\n", -Offset);
+        printf("    addi a0, fp, %d\n", Nd->Var->Offset);
         return;
     }
 }
@@ -128,8 +125,27 @@ static void genStmt(Node *Nd)
     error("invalid statement");
 }
 
-void codegen(Node *Nd)
+static int alignTo(int N, int Align)
 {
+    return (N + Align - 1) / Align * Align;
+}
+
+static void assignLVarOffsets(Function *Prog)
+{
+    int Offset = 0;
+    for (Obj *Var = Prog->Locals; Var; Var = Var->Next)
+    {
+        Offset += 8;
+        Var->Offset = -Offset;
+    }
+
+    //将栈对齐到16字节的倍数
+    Prog->StackSize = alignTo(Offset, 16);
+}
+
+void codegen(Function *Prog)
+{
+    assignLVarOffsets(Prog);
     printf("    .globl main\n");
     printf("main:\n");
     
@@ -138,10 +154,10 @@ void codegen(Node *Nd)
     printf("    sd fp, 0(sp)\n");
     //mov ebp esp
     printf("    mv fp, sp\n");
-    //sub esp 208
-    printf("    addi sp, sp, -208\n");
+    //sub esp StackSize
+    printf("    addi sp, sp, -%d\n", Prog->StackSize);
 
-    for (Node *N = Nd; N; N = N->Next)
+    for (Node *N = Prog->Body; N; N = N->Next)
     {
         genStmt(N);
         assert(Depth == 0);
