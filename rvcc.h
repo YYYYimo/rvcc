@@ -36,6 +36,7 @@ struct Obj
 typedef enum 
 {
     TK_IDENT, //标记符，变量名、函数名
+    TK_KEYWORD,
     TK_PUNCT,
     TK_NUM,
     TK_EOF
@@ -78,7 +79,8 @@ typedef enum
     ND_NUM,
     ND_EXPR_STMT,
     ND_ASSIGN, //赋值节点
-    ND_VAR //变量节点
+    ND_VAR, //变量节点
+    ND_RET
 } NodeKind;
 
 //AST中二叉树节点

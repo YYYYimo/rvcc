@@ -116,8 +116,13 @@ static void genAddr(Node *Nd)
 
 static void genStmt(Node *Nd)
 {
-    if (Nd->Kind == ND_EXPR_STMT)
+    switch(Nd->Kind)
     {
+    case ND_RET:
+        genExpr(Nd->LHS);
+        printf("    j .L.return\n");
+        return;
+    case ND_EXPR_STMT:
         genExpr(Nd->LHS);
         return;
     }
@@ -162,6 +167,8 @@ void codegen(Function *Prog)
         genStmt(N);
         assert(Depth == 0);
     }
+    //return label, signal mov eax, 1
+    printf("    .L.return:\n");
 
     //mov esp ebp
     printf("    mv sp, fp\n");

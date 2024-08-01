@@ -6,6 +6,7 @@ static char *CurrentInput;
 Token *newToken(TokenKind Kind, char *Start, char *End);
 static int readPunct(char *Ptr);
 static bool startsWith(char *Str, char *SubStr);
+static void convertKeywords(Token *Tok);
 
 void error(char *Fmt, ...) {
   // 定义一个va_list变量
@@ -99,6 +100,15 @@ static bool isIdent2(char C)
     return isIdent1(C) || ('0' <= C && C <= '9');
 }
 
+static void convertKeywords(Token *Tok)
+{
+    for (Token *T = Tok; T->Kind != TK_EOF; T = T->Next)
+    {
+        if (equal(T, "return"))
+            T->Kind = TK_KEYWORD;
+    }
+}
+
 Token *tokenize(char *P)
 {
     CurrentInput = P;
@@ -154,6 +164,8 @@ Token *tokenize(char *P)
     }
 
     Cur->Next = newToken(TK_EOF, P, P + 1);
+
+    convertKeywords(Head.Next);
 
     return Head.Next;
 }

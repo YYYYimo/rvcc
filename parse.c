@@ -5,7 +5,7 @@ Obj *Locals;
 
 static Obj *findVar(Token *Tok);
 // program = stmt*
-// stmt = exprStmt
+// stmt = "return" expr ";" | exprStmt
 // exprStmt = expr ";"
 // expr = assign
 // assign = equality ("=" assign recursion) 
@@ -136,10 +136,6 @@ Function *parse(Token *Tok)
     Prog->Locals = Locals;
     return Prog;
 }
-
-
-
-
 
 static Node *primary(Token **Rest, Token *Tok)
 {
@@ -316,5 +312,11 @@ static Node *exprStmt(Token **Rest, Token *Tok)
 
 static Node *stmt(Token **Rest, Token *Tok)
 {
+    if (equal(Tok, "return"))
+    {
+        Node *Nd = newUnary(ND_RET, expr(&Tok, Tok->Next));
+        *Rest = skip(Tok, ";");
+        return Nd;
+    }
     return exprStmt(Rest, Tok);
 }
