@@ -4,7 +4,8 @@
 Obj *Locals;
 
 static Obj *findVar(Token *Tok);
-// program = stmt*
+// program = "{" compounudStmt 
+// compoundStmt = stmt* "}"
 // stmt = "return" expr ";" | exprStmt
 // exprStmt = expr ";"
 // expr = assign
@@ -15,6 +16,7 @@ static Obj *findVar(Token *Tok);
 // mul = primary ("*" primary | "/" primary)
 // unary = ("+" | "-") unary | primary
 // primary = "( expr )" | num | ident
+static Node *compoundStmt(Token **Rest, Token *Tok);
 static Node *stmt(Token **Rest, Token *Tok);
 static Node *exprStmt(Token **Rest, Token *Tok);
 static Node *assign(Token **Rest, Token *Tok);
@@ -117,25 +119,6 @@ static Obj *findVar(Token *Tok)
     return NULL;
 }
 
-Function *parse(Token *Tok)
-{
-    Node Head = {};
-    Node *Cur = &Head;
-
-    //stmt*
-    while (Tok->Kind != TK_EOF)
-    {
-        Cur->Next = stmt(&Tok, Tok);
-        Cur = Cur->Next;
-        
-    }
-    
-    // Body´æ´¢AST£¬Locals´æ´¢±äÁ¿
-    Function *Prog = (Function *)calloc(1, sizeof(Function));
-    Prog->Body = Head.Next;
-    Prog->Locals = Locals;
-    return Prog;
-}
 
 static Node *primary(Token **Rest, Token *Tok)
 {
@@ -318,5 +301,39 @@ static Node *stmt(Token **Rest, Token *Tok)
         *Rest = skip(Tok, ";");
         return Nd;
     }
+
+    if (equal(Tok, "{"))
+    {
+        return compoundStmt(Rest, Tok->Next);
+    }
+    
     return exprStmt(Rest, Tok);
+}
+
+static Node *compoundStmt(Token **Rest, Token *Tok)
+{
+    Node Head = {};
+    Node *Cur = &Head;
+
+    while (!equal(Tok, "}"))
+    {
+        Cur->Next = stmt(&Tok, Tok);
+        Cur = Cur->Next;
+    }
+
+    Node *Nd = newNode(ND_BLOCK);
+    Nd->Body = Head.Next;
+    *Rest = Tok->Next;
+    return Nd;
+}
+
+Function *parse(Token *Tok)
+{
+    Tok = skip(Tok, "{");
+    
+    // Body´æ´¢AST£¬Locals´æ´¢±äÁ¿
+    Function *Prog = (Function *)calloc(1, sizeof(Function));
+    Prog->Body = compoundStmt(&Tok, Tok);
+    Prog->Locals = Locals;
+    return Prog;
 }

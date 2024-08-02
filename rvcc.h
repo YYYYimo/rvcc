@@ -80,7 +80,8 @@ typedef enum
     ND_EXPR_STMT,
     ND_ASSIGN, //赋值节点
     ND_VAR, //变量节点
-    ND_RET
+    ND_RET,
+    ND_BLOCK
 } NodeKind;
 
 //AST中二叉树节点
@@ -91,6 +92,7 @@ struct Node
     Node *RHS;
     Node *Next; //指代下一语句
     Obj *Var; // 存储ND_VAR
+    Node *Body;
     int Val;
 };
 

@@ -118,6 +118,10 @@ static void genStmt(Node *Nd)
 {
     switch(Nd->Kind)
     {
+    case ND_BLOCK:
+        for (Node *N = Nd->Body; N; N = N->Next)
+            genStmt(N);
+        return;
     case ND_RET:
         genExpr(Nd->LHS);
         printf("    j .L.return\n");
@@ -162,11 +166,9 @@ void codegen(Function *Prog)
     //sub esp StackSize
     printf("    addi sp, sp, -%d\n", Prog->StackSize);
 
-    for (Node *N = Prog->Body; N; N = N->Next)
-    {
-        genStmt(N);
-        assert(Depth == 0);
-    }
+    genStmt(Prog->Body);
+    assert(Depth == 0);
+    
     //return label, signal mov eax, 1
     printf("    .L.return:\n");
 
