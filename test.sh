@@ -51,4 +51,6 @@ assert 2 "{1; return 2; 3;}"
 assert 3 "{1; 2; return 3;}"
 assert 3 "{ {1; {2;} return 3;}}"
 
+# [14] Ö§³Ö¿ÕÓï¾ä
+assert 5 "{;;;return 5;}"
 echo OK

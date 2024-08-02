@@ -7,7 +7,7 @@ static Obj *findVar(Token *Tok);
 // program = "{" compounudStmt 
 // compoundStmt = stmt* "}"
 // stmt = "return" expr ";" | exprStmt
-// exprStmt = expr ";"
+// exprStmt = expr? ";"
 // expr = assign
 // assign = equality ("=" assign recursion) 
 // equality = relational ("==" relational | "!=" relational)
@@ -288,9 +288,15 @@ static Node *expr(Token **Rest, Token *Tok)
 
 static Node *exprStmt(Token **Rest, Token *Tok)
 {
+    if (equal(Tok, ";"))
+    {
+        *Rest = Tok->Next;
+        return newNode(ND_BLOCK);
+    }
     Node *Nd = newUnary(ND_EXPR_STMT, expr(&Tok, Tok));
     *Rest = skip(Tok, ";");
     return Nd;
+
 }
 
 static Node *stmt(Token **Rest, Token *Tok)
@@ -306,7 +312,7 @@ static Node *stmt(Token **Rest, Token *Tok)
     {
         return compoundStmt(Rest, Tok->Next);
     }
-    
+
     return exprStmt(Rest, Tok);
 }
 
