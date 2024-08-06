@@ -93,7 +93,10 @@ struct Node
     Node *LHS;
     Node *RHS;
     Node *Next; //指代下一语句
-    Obj *Var; // 存储ND_VAR
+    Token *Tok; //节点对应的终结符
+
+    //ND_VAR
+    Obj *Var; 
     int Val;
     Node *Body; //{}
 
