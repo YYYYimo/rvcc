@@ -9,6 +9,7 @@ static Obj *findVar(Token *Tok);
 // stmt = "return" expr ";" 
 //          | exprStmt
 //          | "if" "(" expr ")" stmt ("else" stmt)?
+//          | "for" "(" exprStmt expr? ";" expr? ")" stmt
 //          | "{" compoundStmt
 // exprStmt = expr? ";"
 // expr = assign
@@ -302,6 +303,12 @@ static Node *exprStmt(Token **Rest, Token *Tok)
     
 }
 
+
+// stmt = "return" expr ";" 
+//          | exprStmt
+//          | "if" "(" expr ")" stmt ("else" stmt)?
+//          | "for" "(" exprStmt expr? ";" expr? ")" stmt
+//          | "{" compoundStmt
 static Node *stmt(Token **Rest, Token *Tok)
 {
     if (equal(Tok, "return"))
@@ -328,6 +335,28 @@ static Node *stmt(Token **Rest, Token *Tok)
         if (equal(Tok, "else"))
             Nd->Els = stmt(&Tok, Tok->Next);
         
+        *Rest = Tok;
+        return Nd;
+    }
+
+    if (equal(Tok, "for"))
+    {
+        Node *Nd = newNode(ND_FOR);
+        //"("
+        Tok = skip(Tok->Next, "(");
+        //exprStmt
+        Nd->Init = exprStmt(&Tok, Tok);
+        //expr ? ";"
+        if (!equal(Tok, ";"))
+            Nd->Cond = expr(&Tok, Tok);
+        Tok = skip(Tok, ";");
+        // expr ? ")"
+        if (!equal(Tok, ")"))
+            Nd->Inc = expr(&Tok, Tok);
+        Tok = skip(Tok, ")");
+
+        //stmt
+        Nd->Then = stmt(&Tok, Tok);
         *Rest = Tok;
         return Nd;
     }

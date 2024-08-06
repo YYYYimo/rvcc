@@ -82,7 +82,8 @@ typedef enum
     ND_VAR, //变量节点
     ND_RET,
     ND_BLOCK,
-    ND_IF
+    ND_IF,
+    ND_FOR
 } NodeKind;
 
 //AST中二叉树节点
@@ -93,14 +94,17 @@ struct Node
     Node *RHS;
     Node *Next; //指代下一语句
     Obj *Var; // 存储ND_VAR
-
+    int Val;
     Node *Body; //{}
 
     //ND_IF
     Node *Cond; // 条件内的语句
     Node *Then; // 符合条件后的语句
     Node *Els; //不符合条件的语句
-    int Val;
+
+    //ND_FOR
+    Node *Init;
+    Node *Inc;
 };
 
 //语法分析与代码生成
