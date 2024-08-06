@@ -7,6 +7,7 @@ Token *newToken(TokenKind Kind, char *Start, char *End);
 static int readPunct(char *Ptr);
 static bool startsWith(char *Str, char *SubStr);
 static void convertKeywords(Token *Tok);
+static bool isKeyword(Token *Tok);
 
 void error(char *Fmt, ...) {
   // 定义一个va_list变量
@@ -80,7 +81,7 @@ static bool startsWith(char *Str, char *SubStr)
     return strncmp(Str, SubStr, strlen(SubStr)) == 0;
 }
 
-
+// 返回操作符的长度
 static int readPunct(char *Ptr)
 {
     if (startsWith(Ptr, "==") || startsWith(Ptr, "!=") ||
@@ -104,9 +105,22 @@ static void convertKeywords(Token *Tok)
 {
     for (Token *T = Tok; T->Kind != TK_EOF; T = T->Next)
     {
-        if (equal(T, "return"))
+        if (isKeyword(T))
             T->Kind = TK_KEYWORD;
+    }  
+}
+
+static bool isKeyword(Token *Tok)
+{
+    static char *KW[] = {"return", "if", "else"};
+
+    for (int i = 0; i < sizeof(KW) / sizeof(*KW); ++i)
+    {
+        if (equal(Tok, KW[i]))
+            return true;
     }
+
+    return false;
 }
 
 Token *tokenize(char *P)

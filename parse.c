@@ -6,7 +6,10 @@ Obj *Locals;
 static Obj *findVar(Token *Tok);
 // program = "{" compounudStmt 
 // compoundStmt = stmt* "}"
-// stmt = "return" expr ";" | exprStmt
+// stmt = "return" expr ";" 
+//          | exprStmt
+//          | "if" "(" expr ")" stmt ("else" stmt)?
+//          | "{" compoundStmt
 // exprStmt = expr? ";"
 // expr = assign
 // assign = equality ("=" assign recursion) 
@@ -296,7 +299,7 @@ static Node *exprStmt(Token **Rest, Token *Tok)
     Node *Nd = newUnary(ND_EXPR_STMT, expr(&Tok, Tok));
     *Rest = skip(Tok, ";");
     return Nd;
-
+    
 }
 
 static Node *stmt(Token **Rest, Token *Tok)
@@ -311,6 +314,22 @@ static Node *stmt(Token **Rest, Token *Tok)
     if (equal(Tok, "{"))
     {
         return compoundStmt(Rest, Tok->Next);
+    }
+
+    if (equal(Tok, "if"))
+    {
+        Node *Nd = newNode(ND_IF);
+
+        Tok = skip(Tok->Next, "(");
+        Nd->Cond = expr(&Tok, Tok);
+        Tok = skip(Tok, ")");
+
+        Nd->Then = stmt(&Tok, Tok);
+        if (equal(Tok, "else"))
+            Nd->Els = stmt(&Tok, Tok->Next);
+        
+        *Rest = Tok;
+        return Nd;
     }
 
     return exprStmt(Rest, Tok);

@@ -81,7 +81,8 @@ typedef enum
     ND_ASSIGN, //赋值节点
     ND_VAR, //变量节点
     ND_RET,
-    ND_BLOCK
+    ND_BLOCK,
+    ND_IF
 } NodeKind;
 
 //AST中二叉树节点
@@ -92,7 +93,13 @@ struct Node
     Node *RHS;
     Node *Next; //指代下一语句
     Obj *Var; // 存储ND_VAR
-    Node *Body;
+
+    Node *Body; //{}
+
+    //ND_IF
+    Node *Cond; // 条件内的语句
+    Node *Then; // 符合条件后的语句
+    Node *Els; //不符合条件的语句
     int Val;
 };
 

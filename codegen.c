@@ -10,6 +10,7 @@ static void genAddr(Node *Nd);
 static void genExpr(Node *Nd);
 static int alignTo(int N, int Align);
 static void assignLVarOffsets(Function *Prog);
+static int count(void);
 
 static void push(void)
 {
@@ -23,6 +24,12 @@ static void pop(char *Reg)
     printf("    ld %s, 0(sp)\n", Reg);
     printf("    addi sp, sp, 8\n");
     Depth--;
+}
+
+static int count(void)
+{
+    static int I = 1;
+    return I++;
 }
 
 static void genExpr(Node *Nd)
@@ -118,6 +125,20 @@ static void genStmt(Node *Nd)
 {
     switch(Nd->Kind)
     {
+    case ND_IF:
+    {
+        int C = count();
+        genExpr(Nd->Cond);
+        printf("    beqz a0, .L.else.%d\n", C);
+        genStmt(Nd->Then);
+        printf("    j .L.else.%d\n", C);
+        printf(".L.else.%d:\n", C);
+        if (Nd->Els)
+            genStmt(Nd->Els);
+        printf(".L.end.%d:\n", C);
+        return;
+    }
+
     case ND_BLOCK:
         for (Node *N = Nd->Body; N; N = N->Next)
             genStmt(N);
@@ -168,9 +189,9 @@ void codegen(Function *Prog)
 
     genStmt(Prog->Body);
     assert(Depth == 0);
-    
+
     //return label, signal mov eax, 1
-    printf("    .L.return:\n");
+    printf(".L.return:\n");
 
     //mov esp ebp
     printf("    mv sp, fp\n");
