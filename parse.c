@@ -10,6 +10,7 @@ static Obj *findVar(Token *Tok);
 //          | exprStmt
 //          | "if" "(" expr ")" stmt ("else" stmt)?
 //          | "for" "(" exprStmt expr? ";" expr? ")" stmt
+//          | "while" "(" expr ")" stmt
 //          | "{" compoundStmt
 // exprStmt = expr? ";"
 // expr = assign
@@ -305,10 +306,11 @@ static Node *exprStmt(Token **Rest, Token *Tok)
 
 
 // stmt = "return" expr ";" 
-//          | exprStmt
 //          | "if" "(" expr ")" stmt ("else" stmt)?
 //          | "for" "(" exprStmt expr? ";" expr? ")" stmt
+//          | "while" "(" expr ")" stmt
 //          | "{" compoundStmt
+//          | exprStmt
 static Node *stmt(Token **Rest, Token *Tok)
 {
     if (equal(Tok, "return"))
@@ -316,11 +318,6 @@ static Node *stmt(Token **Rest, Token *Tok)
         Node *Nd = newUnary(ND_RET, expr(&Tok, Tok->Next));
         *Rest = skip(Tok, ";");
         return Nd;
-    }
-
-    if (equal(Tok, "{"))
-    {
-        return compoundStmt(Rest, Tok->Next);
     }
 
     if (equal(Tok, "if"))
@@ -360,6 +357,28 @@ static Node *stmt(Token **Rest, Token *Tok)
         *Rest = Tok;
         return Nd;
     }
+
+    if (equal(Tok, "while"))
+    {
+        Node *Nd = newNode(ND_FOR);
+        //"("
+        Tok = skip(Tok->Next, "(");
+        // expr
+        Nd->Cond = expr(&Tok, Tok);
+        // ")"
+        Tok = skip(Tok, ")");
+        // stmt
+        Nd->Then = stmt(&Tok, Tok);
+
+        *Rest = Tok;
+        return Nd;
+    }
+
+    if (equal(Tok, "{"))
+    {
+        return compoundStmt(Rest, Tok->Next);
+    }
+
 
     return exprStmt(Rest, Tok);
 }

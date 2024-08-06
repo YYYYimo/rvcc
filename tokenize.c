@@ -112,7 +112,7 @@ static void convertKeywords(Token *Tok)
 
 static bool isKeyword(Token *Tok)
 {
-    static char *KW[] = {"return", "if", "else", "for"};
+    static char *KW[] = {"return", "if", "else", "for", "while"};
 
     for (int i = 0; i < sizeof(KW) / sizeof(*KW); ++i)
     {

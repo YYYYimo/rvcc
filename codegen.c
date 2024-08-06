@@ -128,7 +128,8 @@ static void genStmt(Node *Nd)
     case ND_FOR:
     {
         int C = count();
-        genStmt(Nd->Init);
+        if (Nd->Init)
+            genStmt(Nd->Init);
         printf(".L.begin.%d:\n", C);
         if (Nd->Cond)
         {
