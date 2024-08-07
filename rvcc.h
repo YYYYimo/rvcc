@@ -83,7 +83,9 @@ typedef enum
     ND_RET,
     ND_BLOCK,
     ND_IF,
-    ND_FOR
+    ND_FOR,
+    ND_ADDR, // 取地址 &
+    ND_DEREF //解引用 *
 } NodeKind;
 
 //AST中二叉树节点

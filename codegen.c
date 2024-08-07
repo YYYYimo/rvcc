@@ -59,6 +59,16 @@ static void genExpr(Node *Nd)
         genAddr(Nd);
         printf("    ld a0, 0(a0)\n");
         return;
+
+    // &
+    case ND_ADDR:
+        genAddr(Nd->LHS);
+        return;
+    // *
+    case ND_DEREF:
+        genExpr(Nd->LHS);
+        printf("    ld a0, 0(a0)\n");
+        return;
     default:
         break;
     }
@@ -114,11 +124,21 @@ static void genExpr(Node *Nd)
 
 static void genAddr(Node *Nd)
 {
-    if (Nd->Kind == ND_VAR)
+    switch (Nd->Kind)
     {
+    case ND_VAR:
         printf("    addi a0, fp, %d\n", Nd->Var->Offset);
         return;
+    // *
+    case ND_DEREF:
+        genExpr(Nd->LHS);
+        return;
+    default:
+        break;
+
     }
+
+    errorTok(Nd->Tok, "not a lvalue\n");
 }
 
 static void genStmt(Node *Nd)
