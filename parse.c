@@ -40,6 +40,8 @@ static Node *newBinary(NodeKind Kind, Node *LHS, Node *RHS, Token *Tok);
 static Node *newNum(int64_t Val, Token *Tok);
 static Obj* newLVar(char *Name);
 static Node *newVarNode(Obj *Var, Token *Tok);
+static Node *newAdd(Node *LHS, Node *RHS, Token *Tok);
+static Node *newSub(Node *LHS, Node *RHS, Token *Tok);
 
 char *Strndup(const char *s, size_t n)
 {
@@ -112,6 +114,64 @@ static Node *newVarNode(Obj *Var, Token *Tok)
     Node *Nd = newNode(ND_VAR, Tok);
     Nd->Var = Var;
     return Nd;
+}
+
+static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
+{
+    addType(LHS);
+    addType(RHS);
+
+    //num + num
+    if (isInteger(LHS->Ty) && isInteger(RHS->Ty))
+        return newBinary(ND_ADD, LHS, RHS, Tok);
+    
+    // ptr + ptr 不能解析
+    if (LHS->Ty->Base && RHS->Ty->Base)
+        errorTok(Tok, "invalid operands\n");
+    
+    // num + ptr 转化为ptr + num
+    if (!LHS->Ty->Base && RHS->Ty->Base)
+    {
+        Node *tmp = LHS;
+        LHS = RHS;
+        RHS = tmp;
+    }
+
+    // ptr + num
+    RHS = newBinary(ND_MUL, RHS, newNum(8, Tok), Tok);
+    return newBinary(ND_ADD, LHS, RHS, Tok);
+
+}
+
+static Node *newSub(Node *LHS, Node *RHS, Token *Tok)
+{
+    addType(LHS);
+    addType(RHS);
+
+    // num - num
+    if (isInteger(LHS->Ty) && isInteger(RHS->Ty))
+        return newBinary(ND_SUB, LHS, RHS, Tok);
+    
+    // ptr - num
+    if (LHS->Ty->Base && isInteger(RHS->Ty))
+    {
+        RHS = newBinary(ND_MUL, RHS, newNum(8, Tok), Tok);
+        addType(RHS);
+        Node *Nd = newBinary(ND_SUB, LHS, RHS, Tok);
+        Nd->Ty = LHS->Ty;
+        return Nd;
+    }
+
+    // ptr - ptr
+    if (LHS->Ty->Base && RHS->Ty->Base)
+    {
+        Node *Nd = newBinary(ND_SUB, LHS, RHS, Tok);
+        Nd->Ty = TyInt;
+        return newBinary(ND_DIV, Nd, newNum(8, Tok), Tok);
+    }
+
+    errorTok(Tok, "invalid operand\n");
+    return NULL;
 }
 
 static Obj *findVar(Token *Tok)
@@ -210,13 +270,13 @@ static Node *add(Token **Rest, Token *Tok)
         Token *Start = Tok;
         if (equal(Tok, "+"))
         {
-            Nd = newBinary(ND_ADD, Nd, mul(&Tok, Tok->Next), Start);
+            Nd = newAdd(Nd, mul(&Tok, Tok->Next), Start);
             continue;
         }
 
         if (equal(Tok, "-"))
         {
-            Nd = newBinary(ND_SUB, Nd, mul(&Tok, Tok->Next), Start);
+            Nd = newSub(Nd, mul(&Tok, Tok->Next), Start);
             continue;
         }
 
@@ -406,7 +466,9 @@ static Node *compoundStmt(Token **Rest, Token *Tok)
     {
         Cur->Next = stmt(&Tok, Tok);
         Cur = Cur->Next;
+        addType(Cur);
     }
+
 
     Nd->Body = Head.Next;
     *Rest = Tok->Next;

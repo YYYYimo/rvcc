@@ -14,6 +14,9 @@ typedef struct Node Node;
 typedef struct Token Token;
 typedef struct Obj Obj;
 typedef struct Function Function;
+typedef struct Type Type;
+
+extern Type *TyInt;
 
 char *Strndup(const char *s, size_t n);
 
@@ -96,6 +99,7 @@ struct Node
     Node *RHS;
     Node *Next; //指代下一语句
     Token *Tok; //节点对应的终结符
+    Type *Ty; //节点存储的数据类型
 
     //ND_VAR
     Obj *Var; 
@@ -118,3 +122,20 @@ Function *parse(Token *Tok);
 //代码生成入口函数
 void codegen(Function *Prog);
 
+
+typedef enum 
+{
+    TY_INT,
+    TY_PTR
+} TypeKind;
+
+struct Type
+{
+    TypeKind Kind;
+    Type *Base;
+};
+
+// 判断是否为整型
+bool isInteger(Type *TY);
+// 为节点内的所有节点添加类型
+void addType(Node *Nd);
