@@ -5,7 +5,10 @@ Obj *Locals;
 
 static Obj *findVar(Token *Tok);
 // program = "{" compounudStmt 
-// compoundStmt = stmt* "}"
+// compoundStmt = (declaration | stmt)* "}"
+// declaration = declspec (declarator "=" expr)? ("," declarator "=" expr)? ";"
+// declspec = "int"
+// declarator = "*"* ident
 // stmt = "return" expr ";" 
 //          | exprStmt
 //          | "if" "(" expr ")" stmt ("else" stmt)?
@@ -22,6 +25,9 @@ static Obj *findVar(Token *Tok);
 // unary = ("+" | "-" | "*" | "&") unary | primary
 // primary = "( expr )" | num | ident
 static Node *compoundStmt(Token **Rest, Token *Tok);
+static Node *declaration(Token **Rest, Token *Tok);
+static Type *declspec(Token **Rest,  Token *Tok);
+static Type *declarator(Token **Rest, Token *Tok, Type *Ty);
 static Node *stmt(Token **Rest, Token *Tok);
 static Node *exprStmt(Token **Rest, Token *Tok);
 static Node *assign(Token **Rest, Token *Tok);
@@ -38,23 +44,30 @@ static Node *newNode(NodeKind Kind, Token *Tok);
 static Node *newUnary(NodeKind Kind, Node *Expr, Token *Tok);
 static Node *newBinary(NodeKind Kind, Node *LHS, Node *RHS, Token *Tok);
 static Node *newNum(int64_t Val, Token *Tok);
-static Obj* newLVar(char *Name);
+static Obj* newLVar(char *Name, Type *Ty);
 static Node *newVarNode(Obj *Var, Token *Tok);
 static Node *newAdd(Node *LHS, Node *RHS, Token *Tok);
 static Node *newSub(Node *LHS, Node *RHS, Token *Tok);
+
+static char *getIdent(Token *Tok)
+{
+    if (Tok->Kind != TK_IDENT)
+        errorTok(Tok, "expected an identifier");
+    return Strndup(Tok->Loc, Tok->Len);
+}
 
 char *Strndup(const char *s, size_t n)
 {
     if (!s)
     {
-        error("wrong name\n");
+        error("wrong name");
         return NULL;
     }
 
     char *new_str = (char *)calloc(n + 1, sizeof(char));
     if (new_str == NULL) 
     {
-        error("memory allocation failed\n");
+        error("memory allocation failed");
         return NULL;
     }
     strncpy(new_str, s, n);
@@ -95,16 +108,17 @@ static Node *newNum(int64_t Val, Token *Tok)
     return Nd;
 }
 
-static Obj *newLVar(char *Name)
+static Obj *newLVar(char *Name, Type *Ty)
 {
     Obj *Var = (Obj *)calloc(1, sizeof(Obj));
     if (!Var)
     {
-        error("Memory allocation failed\n");
+        error("Memory allocation failed");
         exit(1);
     }
     Var->Name = Name;
     Var->Next = Locals;
+    Var->Ty = Ty;
     Locals = Var;
     return Var;
 }
@@ -127,7 +141,7 @@ static Node *newAdd(Node *LHS, Node *RHS, Token *Tok)
     
     // ptr + ptr 不能解析
     if (LHS->Ty->Base && RHS->Ty->Base)
-        errorTok(Tok, "invalid operands\n");
+        errorTok(Tok, "invalid operands");
     
     // num + ptr 转化为ptr + num
     if (!LHS->Ty->Base && RHS->Ty->Base)
@@ -170,7 +184,7 @@ static Node *newSub(Node *LHS, Node *RHS, Token *Tok)
         return newBinary(ND_DIV, Nd, newNum(8, Tok), Tok);
     }
 
-    errorTok(Tok, "invalid operand\n");
+    errorTok(Tok, "invalid operand");
     return NULL;
 }
 
@@ -209,7 +223,7 @@ static Node *primary(Token **Rest, Token *Tok)
     {
         Obj *Var = findVar(Tok);
         if (!Var)
-            Var = newLVar(Strndup(Tok->Loc, Tok->Len));
+            errorTok(Tok, "undefined variable");
         *Rest = Tok->Next;
         return newVarNode(Var, Tok);
     }
@@ -456,6 +470,66 @@ static Node *stmt(Token **Rest, Token *Tok)
     return exprStmt(Rest, Tok);
 }
 
+// declarator = "*"* ident
+static Type *declarator(Token **Rest, Token *Tok, Type *Ty)
+{
+    while(consume(&Tok, Tok, "*"))
+        Ty = pointerTo(Ty);
+
+    if (Tok->Kind != TK_IDENT)
+        errorTok(Tok, "expected a variable name");
+    
+    Ty->Name = Tok;
+    *Rest = Tok->Next;
+    return Ty;
+}
+
+// declspec = "int"
+static Type *declspec(Token **Rest,  Token *Tok)
+{
+    *Rest = skip(Tok, "int");
+    return TyInt;
+}
+
+// declaration = declspec (declarator "=" expr)? ("," declarator "=" expr)? ";"
+static Node *declaration(Token **Rest, Token *Tok)
+{
+    //declspec（ basic type)
+    Type *BaseTy = declspec(&Tok, Tok);
+
+    Node Head = {};
+    Node *Cur = &Head;
+
+    // 对变量声明次数计数
+    int I = 0;
+    while (!equal(Tok, ";"))
+    {
+        if (I++ > 0)
+            Tok = skip(Tok, ",");
+        
+        // declarator
+        Type *Ty = declarator(&Tok, Tok, BaseTy);
+        Obj *Var = newLVar(getIdent(Ty->Name), Ty);
+
+        if (!equal(Tok, "="))
+            continue;
+        
+        Node *LHS = newVarNode(Var, Ty->Name);
+        Node *RHS = assign(&Tok, Tok->Next);
+        Node *Node = newBinary(ND_ASSIGN, LHS, RHS, Tok);
+        
+        Cur->Next = newUnary(ND_EXPR_STMT, Node, Tok);
+        Cur = Cur->Next;
+    }
+
+    Node *Nd = newNode(ND_BLOCK, Tok);
+    Nd->Body = Head.Next;
+    *Rest = Tok->Next;
+    return Nd;
+
+}
+
+// compoundStmt = (declaration | stmt)* "}"
 static Node *compoundStmt(Token **Rest, Token *Tok)
 {
     Node Head = {};
@@ -464,7 +538,10 @@ static Node *compoundStmt(Token **Rest, Token *Tok)
 
     while (!equal(Tok, "}"))
     {
-        Cur->Next = stmt(&Tok, Tok);
+        if (equal(Tok, "int"))
+            Cur->Next = declaration(&Tok, Tok);
+        else
+            Cur->Next = stmt(&Tok, Tok);
         Cur = Cur->Next;
         addType(Cur);
     }
@@ -485,3 +562,4 @@ Function *parse(Token *Tok)
     Prog->Locals = Locals;
     return Prog;
 }
+

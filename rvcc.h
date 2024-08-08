@@ -33,6 +33,7 @@ struct Obj
     Obj *Next;
     char *Name;
     int Offset; //offset of fp
+    Type *Ty;
 };
 
 
@@ -63,6 +64,8 @@ void errorTok(Token *Tok, char *Fmt, ...);
 
 bool equal(Token *Tok, char *Str);
 Token *skip(Token *Tok, char *Str);
+bool consume(Token **Rest, Token *Tok, char *Str);
+
 //词法分析
 Token *tokenize(char *Input);
 
@@ -133,9 +136,12 @@ struct Type
 {
     TypeKind Kind;
     Type *Base;
+    Token *Name;
 };
 
 // 判断是否为整型
 bool isInteger(Type *TY);
 // 为节点内的所有节点添加类型
 void addType(Node *Nd);
+
+Type *pointerTo(Type *Base);

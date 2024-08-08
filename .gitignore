@@ -1,1 +1,7 @@
 .vscode/
+
+**/*.o
+**/*.s
+/tmp*
+/rvcc
+/testrc.txt

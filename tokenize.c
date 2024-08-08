@@ -9,6 +9,7 @@ static bool startsWith(char *Str, char *SubStr);
 static void convertKeywords(Token *Tok);
 static bool isKeyword(Token *Tok);
 
+
 void error(char *Fmt, ...) {
   // 定义一个va_list变量
   va_list VA;
@@ -67,6 +68,18 @@ Token *skip(Token *Tok, char *Str)
     return Tok->Next;
 }
 
+bool consume(Token **Rest, Token *Tok, char *Str)
+{
+    if (equal(Tok, Str))
+    {
+        *Rest = Tok->Next;
+        return true;
+    }
+
+    *Rest = Tok;
+    return false;
+}
+
 Token *newToken(TokenKind Kind, char *Start, char *End)
 {
     Token *Tok = (Token *)calloc(1, sizeof(Token));
@@ -112,7 +125,7 @@ static void convertKeywords(Token *Tok)
 
 static bool isKeyword(Token *Tok)
 {
-    static char *KW[] = {"return", "if", "else", "for", "while"};
+    static char *KW[] = {"return", "if", "else", "for", "while", "int"};
 
     for (int i = 0; i < sizeof(KW) / sizeof(*KW); ++i)
     {

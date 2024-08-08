@@ -46,9 +46,12 @@ void addType(Node *Nd)
     case ND_NE:
     case ND_LE:
     case ND_LT:
-    case ND_VAR:
     case ND_NUM:
         Nd->Ty = TyInt;
+        return;
+    
+    case ND_VAR:
+        Nd->Ty = Nd->Var->Ty;
         return;
     
     case ND_ADDR:
@@ -56,10 +59,9 @@ void addType(Node *Nd)
         return;
     
     case ND_DEREF:
-        if (Nd->LHS->Ty->Kind == TY_PTR)
-            Nd->Ty = Nd->LHS->Ty->Base;
-        else
-            Nd->Ty = TyInt;
+        if (Nd->LHS->Ty->Kind != TY_PTR)
+            errorTok(Nd->Tok, "invalid pointer dereference");
+        Nd->Ty = Nd->LHS->Ty->Base;
         return;
     
     default:
